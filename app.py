@@ -12,6 +12,9 @@ from flask.templating import render_template
 from flask_redis import FlaskRedis
 from yt_dlp.YoutubeDL import YoutubeDL
 
+downloads_path = '/downloads/'
+listen_host = '0.0.0.0'
+
 app = Flask(__name__)
 app.config.update(
     CELERY_BROKER_URL='redis://localhost:6379',
@@ -83,7 +86,7 @@ class Download:
         try:
             self.title = info.get(
                 'tmpfilename'
-            ).replace('.part', '').replace('/downloads/', '')
+            ).replace('.part', '').replace(downloads_path, '')
         except Exception:
             pass
 
@@ -107,7 +110,7 @@ def download(id):
     with app.app_context():
         d = Download.find(id)
         opts = {
-            'outtmpl': '/downloads/%(title)s-%(id)s.%(ext)s',
+            'outtmpl': f'{downloads_path}%(title)s-%(id)s.%(ext)s',
             'progress_hooks': [d.set_details]
         }
         y = YoutubeDL(params=opts)
@@ -174,4 +177,4 @@ def restart_download(id):
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+    app.run(host=listen_host)
