@@ -10,7 +10,7 @@ from flask import Flask
 from flask import request
 from flask.templating import render_template
 from flask_redis import FlaskRedis
-from youtube_dl.YoutubeDL import YoutubeDL
+from yt_dlp.YoutubeDL import YoutubeDL
 
 app = Flask(__name__)
 app.config.update(
@@ -90,10 +90,11 @@ class Download:
         # Already completed downloads don't have `downloaded_bytes`
         if info.get('status') != 'finished':
             self.downloaded_bytes = info.get('downloaded_bytes', 0)
+            self.total_bytes = info.get('total_bytes_estimate', 0)
         else:
-            self.downloaded_bytes = info.get('total_bytes')
+            self.downloaded_bytes = info.get('total_bytes', 0)
+            self.total_bytes = info.get('total_bytes', 0)
 
-        self.total_bytes = info.get('total_bytes', 0)
         self.speed = info.get('_speed_str', '')
         self.status = info.get('status', 'pending')
         self.eta = info.get('_eta_str', '')
