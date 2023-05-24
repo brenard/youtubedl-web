@@ -1,7 +1,7 @@
-FROM python:3.6
-MAINTAINER Fran Hermoso <franhp@gmail.com>
+FROM python:3.9
+MAINTAINER Benjamin Renard <brenard@zionetrix.net>
 
-RUN apt-get update && apt-get install -y supervisor redis-server
+RUN apt-get update && apt-get install --no-install-recommends -y supervisor redis-server ffmpeg && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ADD requirements.txt /app/
 RUN pip install -r /app/requirements.txt
@@ -13,10 +13,10 @@ ADD app.py /app/
 # Supervisor
 ADD supervisord/conf.d/* /etc/supervisor/conf.d/
 ADD supervisord/supervisord.conf /etc/supervisor/supervisord.conf
-RUN mkdir -p /var/log/server /var/log/redis /var/log/celery
+RUN mkdir -p /var/log/yt-dlp-web /var/log/redis
 
 RUN mkdir /downloads
-RUN chmod -R a+rwx /downloads
+RUN chmod 777 /downloads
 
 EXPOSE 5000
 

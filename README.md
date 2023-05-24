@@ -1,6 +1,6 @@
-# YoutubeDL as a Web / REST server
+# YT-DLP as a Web / REST server
 
-Simple Web UI to queue downloads using the great [YoutubeDL](https://rg3.github.io/youtube-dl/)
+Simple Web UI to queue downloads using the great [YT-DLP](https://github.com/yt-dlp/yt-dlp)
 
 ![sample](static/sample.png)
 
@@ -9,7 +9,9 @@ It can also be used as a very simple REST api
 ## Run in Docker
 
 ```
-docker run -d -p "5000:5000" -v ./downloads:/downloads/ franhp/youtubedl-web
+mkdir /downloads
+chmod a+rwx /downloads
+docker run -d -p "5000:5000" -v ./downloads:/downloads/ brenard/yt-dlp-web
 ```
 
 ## Using the API
@@ -18,4 +20,55 @@ docker run -d -p "5000:5000" -v ./downloads:/downloads/ franhp/youtubedl-web
 curl -XPOST -d "url=$url" http://ip:5000/add/
 ```
 
+## Manual installation
 
+```bash
+# Install dependencies
+apt update
+apt install supervisor redis-server ffmpeg python3-venv liquidprompt git sed
+
+# Create yt-dlp-web user
+adduser --home /srv/yt-dlp-web --disabled-password yt-dlp-web
+
+# Create python venv & configure yt-dlp-web user environment
+su - yt-dlp-web
+python3 -m venv venv
+cat << EOF >> .bashrc
+
+# Enable Liquid Prompt and virtual environment if in interactive shell
+if [ "$PS1" ]; then
+    echo "Activating virtual environment (from ~/.bashrc) ..."
+    source /usr/share/liquidprompt/liquidprompt
+    source ~/venv/bin/activate
+fi
+EOF
+
+# Reconnect as yt-dlp-web to enable its environment
+exit
+su - yt-dlp-web
+
+# Clone sources
+git clone https://github.com/brenard/yt-dlp-web.git
+
+# Install python requirements
+pip install -r yt-dlp-web/requirements.txt
+
+# Adjust downloads path and listen host
+mkdir downloads
+sed -i 's#/downloads/#/srv/yt-dlp-web/downloads/#' yt-dlp-web/app.py
+sed -i 's#0.0.0.0#localhost#' yt-dlp-web/app.py
+
+# Adjust supervisor configuration
+sed -i 's#command=#command=/srv/yt-dlp-web/venv/bin/#' yt-dlp-web/supervisord/conf.d/yt-dlp-web-server.conf yt-dlp-web/supervisord/conf.d/yt-dlp-web-celery.conf
+sed -i 's#/app#/srv/yt-dlp-web#' yt-dlp-web/supervisord/conf.d/yt-dlp-web-server.conf yt-dlp-web/supervisord/conf.d/yt-dlp-web-celery.conf
+sed -i 's#/user=nobody#user=yt-dlp-web#' yt-dlp-web/supervisord/conf.d/yt-dlp-web-server.conf yt-dlp-web/supervisord/conf.d/yt-dlp-web-celery.conf
+
+# Create log directory
+exit
+mkdir /var/log/yt-dlp-web
+
+# Install supervisor configuration & restart service
+ln -s /srv/yt-dlp-web/yt-dlp-web/supervisord/conf.d/yt-dlp-web-server.conf /etc/supervisor/conf.d/
+ln -s /srv/yt-dlp-web/yt-dlp-web/supervisord/conf.d/yt-dlp-web-celery.conf /etc/supervisor/conf.d/
+service supervisor restart
+```
