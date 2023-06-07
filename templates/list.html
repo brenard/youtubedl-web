@@ -1,68 +1,58 @@
-<table class="table table-striped">
-<thead>
-  <tr>
-      <th>Title</th>
-      <th>Progress</th>
-      <th>Status</th>
-      <th>Speed</th>
-      <th>ETA</th>
-      <th>Extra</th>
-      <th>Options</th>
-  </tr>
-</thead>
-<tbody>
 {% raw %}
-  <tr ng-show="!downloads.length"><td colspan="7" style="text-align: center;">No downloads yet!</td></tr>
-  <tr ng-repeat="download in downloads">
-      <td class="col-md-4">
-          {{ download.title | limitTo: 65 }}{{download.title.length > 65 ? '...' : ''}}
-      </td>
+<p class="text-center mt-2" ng-show="!downloads.length">No downloads yet!</p>
 
-      <td class="col-md-3">
-        <div class="progress" ng-if="download.status != 'pending'">
-          <div role="progressbar" class="progress-bar"
-               ng-class="{active: download.status == 'downloading', 'progress-bar-striped': download.status == 'downloading' && !download.stuck, 'progress-bar-success': download.status == 'finished', 'progress-bar-danger': download.status == 'downloading' && download.stuck}"
-               aria-valuenow="{{ (download.downloaded_bytes * 100) / download.total_bytes }}" aria-valuemin="0" aria-valuemax="100"
-               style="min-width: 2em; width: {{ (download.downloaded_bytes * 100) / download.total_bytes | number:0}}%;"
-          >
-              {{ (download.downloaded_bytes * 100) / download.total_bytes | number:0}}%
-          </div>
-        </div>
-      </td>
+<div class="list-group mt-2" ng-if="downloads.length">
+  <div class="list-group-item" aria-current="true" ng-repeat="download in downloads">
+    <div class="d-flex w-100 justify-content-between mb-2">
+      <h5 class="mb-1">{{ download.title | limitTo: 120 }}{{download.title.length > 120 ? '...' : ''}}</h5>
 
-      <td class="col-md-1">
-          <span class="label"
-                ng-if="!download.stuck"
-                ng-class="{'label-warning': download.status == 'pending', 'label-info': download.status == 'downloading', 'label-success': download.status == 'finished'}"
-          >
-              {{download.status}}
-          </span>
+      <span>
+        <span class="badge rounded-pill"
+              ng-if="!download.stuck"
+              ng-class="{'text-bg-warning': download.status == 'pending', 'text-bg-info': download.status == 'downloading', 'text-bg-success': download.status == 'finished'}"
+        >
+            {{download.status}}
+        </span>
 
-          <span ng-if="download.stuck" class="label label-danger">stuck</span>
-      </td>
-      <td class="col-md-1"><span ng-if="!download.stuck">{{download.speed}}</span></td>
-      <td class="col-md-1">
-          <span ng-if="!download.stuck">{{download.eta}}</span>
-      </td>
-      <td class="col-md-1">
-          <span class="label label-small label-info" ng-if="download.status == 'downloading'">{{download.last_update}}</span>
-          <span class="label label-info" ng-if="download.status == 'downloading'">{{ download.downloaded_bytes| bytes }} / {{download.total_bytes | bytes}}</span>
-          <span class="label label-success" ng-if="download.status == 'finished'">{{download.total_bytes | bytes}}</span>
-      </td>
+        <span ng-if="download.stuck" class="badge rounded-pill text-bg-danger">stuck</span>
+      </span>
+    </div>
 
-      <td class="col-md-1">
-          <button class="btn btn-danger btn-xs" ng-click="deleteDownload(download.id)">
-              <span class="glyphicon glyphicon-trash"></span>
-          </button>
-          <button class="btn btn-primary btn-xs" ng-click="restartDownload(download.id)">
-              <span class="glyphicon glyphicon-repeat"></span>
-          </button>
-          <a href="{{download.url}}">
-              <span class="glyphicon glyphicon-new-window"></span>
-          </a>
-      </td>
+    <div class="progress mb-1" role="progressbar" ng-if="download.status != 'pending' && download.status != 'finished'"
+      aria-valuenow="{{ (download.downloaded_bytes * 100) / download.total_bytes }}" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-bar"
+           ng-class="{'progress-bar-animated': download.status == 'downloading', 'progress-bar-striped': download.status == 'downloading' && !download.stuck, 'bg-success': download.status == 'finished', 'bg-danger': download.status == 'downloading' && download.stuck}"
+           style="min-width: 2em; width: {{ (download.downloaded_bytes * 100) / download.total_bytes | number:0}}%;"
+      >
+          {{ (download.downloaded_bytes * 100) / download.total_bytes | number:0}}%
+      </div>
+    </div>
 
-  </tr>
+    <div class="d-flex w-100 justify-content-between mb-1" ng-if="download.status != 'pending'">
+      <span ng-if="download.status == 'downloading'" title="{{download.last_update}}">{{ download.downloaded_bytes| bytes }} / {{download.total_bytes | bytes}}</span>
+      <span ng-if="download.status == 'finished'">{{download.total_bytes | bytes}}</span>
+
+      <span>
+        <span class="badge rounded-pill text-bg-info" ng-if="!download.stuck">
+          {{download.speed}}
+          <span ng-if="download.status != 'finished'"> / ETA: {{download.eta}}</span>
+        </span>
+      </span>
+    </div>
+
+    <div class="text-end">
+      <div class="btn-group" role="group">
+        <button class="btn btn-danger" ng-click="deleteDownload(download.id)">
+            <i class="bi bi-trash"></i>
+        </button>
+        <button class="btn btn-primary" ng-click="restartDownload(download.id)">
+            <i class="bi bi-arrow-repeat"></i>
+        </button>
+        <a class="btn btn-info" href="{{download.url}}">
+            <i class="bi bi-link"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 {% endraw %}
-</tbody>
-</table>
