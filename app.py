@@ -161,10 +161,16 @@ def remove_download(id):
     d = Download.find(id)
     task = AsyncResult(d.task_id)
     try:
+        log.debug('Revoke task %s (%s)', id, task)
         if not task.ready():
-            revoke(d.task_id, terminate=True)
+            task.revoke(terminate=True)
+            log.info('Task %s (%s) revoked', id, task)
+        else:
+            log.warning('Task %s not ready (%s), can not revoke it.', id, task)
+
     except Exception:
-        pass
+        log.exception('Exception occured revoking task %s (%s)', id, task)
+        return 'ERROR', 500
 
     d.delete()
     return 'OK', 200
