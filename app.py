@@ -18,6 +18,7 @@ from yt_dlp.YoutubeDL import YoutubeDL
 
 downloads_path = '/downloads/'
 listen_host = '0.0.0.0'
+listen_port = 5000
 
 app = Flask(__name__)
 app.config.update(
@@ -49,6 +50,7 @@ class Download:
         self.task_id = j.get('task_id', '')
         self.last_update = j.get('last_update', '')
         self.filename = j.get('filename', '')
+        self.downloads_path = j.get('downloads_path', downloads_path)
 
         if self.last_update != '':
             timestamp = datetime.strptime(self.last_update, '%Y-%m-%d %H:%M:%S')
@@ -90,9 +92,7 @@ class Download:
 
     def set_details(self, info):
         try:
-            self.title = info.get(
-                'tmpfilename'
-            ).replace('.part', '').replace(downloads_path, '')
+            self.title = os.path.basename(info['tmpfilename']).replace('.part', '')
         except Exception:
             pass
 
@@ -122,7 +122,7 @@ def download(id):
     with app.app_context():
         d = Download.find(id)
         opts = {
-            'outtmpl': f'{downloads_path}%(title)s-%(id)s.%(ext)s',
+            'outtmpl': os.path.join(d.downloads_path, '%(title)s-%(id)s.%(ext)s'),
             'progress_hooks': [d.set_details],
             'post_hooks': [d.set_filename],
         }
@@ -207,9 +207,26 @@ def download_file(id):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode')
+    parser.add_argument(
+        '-D', '--downloads-path', type=str,
+        help=f'Downloads directory path (default: {downloads_path})',
+        default=downloads_path)
+    parser.add_argument(
+        '-l', '--listen-host', type=str,
+        help=f'Listen host (default: {listen_host})',
+        default=listen_host)
+    parser.add_argument(
+        '-p', '--listen-port', type=int,
+        help=f'Listen port (default: {listen_port})',
+        default=listen_port)
     options = parser.parse_args()
     logging.basicConfig(level=logging.DEBUG if options.debug else logging.INFO)
+    if not os.path.isdir(options.downloads_path):
+        parser.error(f'Invalid downloads path speficied ({options.downloads_path}): not a directory')
+    if not os.access(options.downloads_path, os.W_OK):
+        parser.error(f'Invalid downloads path speficied ({options.downloads_path}): not writable')
+    downloads_path = options.downloads_path
 
     logging.basicConfig(level=logging.DEBUG)
-    log.debug('Starting application...')
-    app.run(host=listen_host)
+    log.debug('Starting application: listen on %s and store downloaded files in %s...', options.listen_host, downloads_path)
+    app.run(host=options.listen_host, port=options.listen_port)
