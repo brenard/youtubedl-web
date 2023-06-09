@@ -1,4 +1,6 @@
+import argparse
 import json
+import logging
 import random
 import time
 
@@ -25,6 +27,7 @@ celery = Celery(
     app.name, backend='rpc://', broker=app.config['CELERY_BROKER_URL']
 )
 redis_store = FlaskRedis(app)
+log = logging.getLogger(__name__)
 
 
 class Download:
@@ -177,4 +180,11 @@ def restart_download(id):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode')
+    options = parser.parse_args()
+    logging.basicConfig(level=logging.DEBUG if options.debug else logging.INFO)
+
+    logging.basicConfig(level=logging.DEBUG)
+    log.debug('Starting application...')
     app.run(host=listen_host)
