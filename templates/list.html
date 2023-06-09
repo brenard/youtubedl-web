@@ -51,6 +51,10 @@
         <a class="btn btn-info" href="{{download.url}}">
             <i class="bi bi-link"></i>
         </a>
+        <a class="btn btn-secondary" href="download/{{download.id}}"
+          ng-class="{'disabled': !download.filename}">
+            <i class="bi bi-download"></i>
+        </a>
       </div>
     </div>
   </div>

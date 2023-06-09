@@ -3,6 +3,7 @@ import json
 import logging
 import random
 import time
+import os.path
 
 from celery import Celery
 from celery.result import AsyncResult
@@ -10,6 +11,7 @@ from celery.worker.control import revoke
 from datetime import datetime, timedelta
 from flask import Flask
 from flask import request
+from flask import send_from_directory
 from flask.templating import render_template
 from flask_redis import FlaskRedis
 from yt_dlp.YoutubeDL import YoutubeDL
@@ -46,6 +48,7 @@ class Download:
         self.eta = j.get('eta', '')
         self.task_id = j.get('task_id', '')
         self.last_update = j.get('last_update', '')
+        self.filename = j.get('filename', '')
 
         if self.last_update != '':
             timestamp = datetime.strptime(self.last_update, '%Y-%m-%d %H:%M:%S')
@@ -105,6 +108,12 @@ class Download:
         self.status = info.get('status', 'pending')
         self.eta = info.get('_eta_str', '')
         self.last_update = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        self.filename = None
+        self.save()
+
+    def set_filename(self, filename):
+        log.debug('Post hook tiggered: filename=%s', filename)
+        self.filename = os.path.basename(filename)
         self.save()
 
 
@@ -114,7 +123,8 @@ def download(id):
         d = Download.find(id)
         opts = {
             'outtmpl': f'{downloads_path}%(title)s-%(id)s.%(ext)s',
-            'progress_hooks': [d.set_details]
+            'progress_hooks': [d.set_details],
+            'post_hooks': [d.set_filename],
         }
         y = YoutubeDL(params=opts)
         y.download([d.url])
@@ -183,6 +193,15 @@ def restart_download(id):
     existing.task_id = new.task_id
     existing.save()
     return 'OK', 200
+
+
+@app.route('/download/<int:id>', methods=['GET'])
+def download_file(id):
+    d = Download.find(id)
+    if not d.filename:
+        return 'ERROR - Not yet downloaded', 400
+    log.debug('Download file %s (%s)', id, d.filename)
+    return send_from_directory(downloads_path, d.filename, as_attachment=True)
 
 
 if __name__ == "__main__":
