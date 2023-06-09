@@ -99,7 +99,7 @@ class Download:
         # Already completed downloads don't have `downloaded_bytes`
         if info.get('status') != 'finished':
             self.downloaded_bytes = info.get('downloaded_bytes', 0)
-            self.total_bytes = info.get('total_bytes_estimate', 0)
+            self.total_bytes = info.get('total_bytes', info.get('total_bytes_estimate', 0))
         else:
             self.downloaded_bytes = self.total_bytes = info.get('total_bytes', 0)
         self.speed = info.get('_speed_str', '')
