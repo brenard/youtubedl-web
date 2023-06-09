@@ -3,7 +3,7 @@ import json
 import logging
 import random
 import time
-import os.path
+import os
 
 from celery import Celery
 from celery.result import AsyncResult
@@ -101,9 +101,7 @@ class Download:
             self.downloaded_bytes = info.get('downloaded_bytes', 0)
             self.total_bytes = info.get('total_bytes_estimate', 0)
         else:
-            self.downloaded_bytes = info.get('total_bytes', 0)
-            self.total_bytes = info.get('total_bytes', 0)
-
+            self.downloaded_bytes = self.total_bytes = info.get('total_bytes', 0)
         self.speed = info.get('_speed_str', '')
         self.status = info.get('status', 'pending')
         self.eta = info.get('_eta_str', '')
@@ -114,6 +112,8 @@ class Download:
     def set_filename(self, filename):
         log.debug('Post hook tiggered: filename=%s', filename)
         self.filename = os.path.basename(filename)
+        file_stats = os.stat(filename)
+        self.downloaded_bytes = self.total_bytes = file_stats.st_size
         self.save()
 
 
