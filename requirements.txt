@@ -4,4 +4,5 @@ celery
 Flask-Redis==0.3.0
 Jinja2==3.0.1
 importlib-metadata==4.13.0
+werkzeug==2.3.7
 yt-dlp

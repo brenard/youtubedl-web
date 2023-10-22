@@ -16,15 +16,17 @@ from flask.templating import render_template
 from flask_redis import FlaskRedis
 from yt_dlp.YoutubeDL import YoutubeDL
 
-downloads_path = '/downloads/'
-listen_host = '0.0.0.0'
-listen_port = 5000
+downloads_path = os.getenv('DOWNLOAD_PATH', '/downloads/')
+listen_host = os.getenv('LISTEN_HOST', '0.0.0.0')
+listen_port = int(os.getenv('LISTEN_PORT', 5000))
+redis_host = os.getenv('REDIS_HOST', 'localhost')
+redis_port = int(os.getenv('REDIS_PORT', 6379))
 
 app = Flask(__name__)
 app.config.update(
-    CELERY_BROKER_URL='redis://localhost:6379',
-    CELERY_RESULT_BACKEND='redis://localhost:6379',
-    REDIS_URL='redis://localhost:6379/1'
+    CELERY_BROKER_URL=f'redis://{redis_host}:{redis_port}',
+    CELERY_RESULT_BACKEND=f'redis://{redis_host}:{redis_port}',
+    REDIS_URL=f'redis://{redis_host}:{redis_port}/1'
 )
 celery = Celery(
     app.name, backend='rpc://', broker=app.config['CELERY_BROKER_URL']
@@ -207,6 +209,7 @@ def download_file(id):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode')
+    parser.add_argument('--dev-mode', action='store_true', help='Enable development mode')
     parser.add_argument(
         '-D', '--downloads-path', type=str,
         help=f'Downloads directory path (default: {downloads_path})',
@@ -229,4 +232,4 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.DEBUG)
     log.debug('Starting application: listen on %s and store downloaded files in %s...', options.listen_host, downloads_path)
-    app.run(host=options.listen_host, port=options.listen_port)
+    app.run(host=options.listen_host, port=options.listen_port, use_reloader=options.dev_mode)
