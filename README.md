@@ -2,25 +2,25 @@
 
 Simple Web UI to queue downloads using the great [YT-DLP](https://github.com/yt-dlp/yt-dlp)
 
-![sample](static/sample.png)
+![sample](static/sample.gif)
 
 It can also be used as a very simple REST api
 
-## Run in Docker
+## Installation
+
+### Install using Docker
 
 ```
 mkdir downloads
 chmod a+rwx downloads
-docker run -d -p "5000:5000" -v $(pwd)/downloads:/downloads/ brenard/yt-dlp-web:latest
+docker run -d \
+  --name yt-dlp-web \
+  -p "5000:5000" \
+  -v $(pwd)/downloads:/downloads/ \
+  brenard/yt-dlp-web:latest
 ```
 
-## Using the API
-
-```
-curl -XPOST -d "url=$url" http://ip:5000/add/
-```
-
-## Manual installation
+### Manual installation
 
 ```bash
 # Install dependencies
@@ -79,4 +79,56 @@ mkdir /var/log/yt-dlp-web
 # Install supervisor configuration & restart service
 ln -s /srv/yt-dlp-web/src/supervisord/yt-dlp-web-*.conf /etc/supervisor/conf.d/
 service supervisor restart
+```
+
+## Simple REST API usage
+
+### Queue download using the API
+
+```
+curl -X POST --json '{"url":"https://www.youtube.com/watch?v=5xAgp6i9lUQ"}' http://localhost:5000/add
+OK
+```
+
+### List download in queue
+
+```
+curl http://localhost:5000/downloads | python -m json.tool
+
+[
+    {
+        "id": 1697984471465,
+        "url": "https://www.youtube.com/watch?v=5xAgp6i9lUQ",
+        "title": "Big Buck Bunny Trailer-5xAgp6i9lUQ.f140.m4a",
+        "downloaded_bytes": 5160672,
+        "total_bytes": 5160672,
+        "status": "finished",
+        "speed": "1.55MiB/s",
+        "eta": "",
+        "task_id": "34063804-fe98-4d78-b56f-3ab482da8f19",
+        "last_update": "2023-10-22 14:21:14",
+        "filename": "Big Buck Bunny Trailer-5xAgp6i9lUQ.mp4",
+        "downloads_path": "/downloads/",
+        "stuck": false
+    }
+]
+```
+
+### Download file in queue
+
+```
+curl -O -J http://localhost:5000/download/1697984471465
+```
+
+### Restart download in queue
+
+```
+curl -XPOST http://localhost:5000/restart/1697984471465
+OK
+```
+
+### Delete download in queue
+
+```
+curl -XDELETE http://localhost:5000/remove/1697984471465
 ```
